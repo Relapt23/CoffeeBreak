@@ -72,6 +72,7 @@ async def login(user: User = Depends(User.as_form)):
 async def home(request: Request):
     return templates.TemplateResponse("home.html", {"request": request})
 
+
 @app.get("/drink_coffee/" response_class=HTMLResponse)
 async def count_cup(request: Request, jwt):
     with sess() as session:
