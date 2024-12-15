@@ -1,0 +1,19 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Кофейный счетчик</title>
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+    <div class="container">
+        <h1>Кофейный счетчик</h1>
+        <p>Вы выпили кофе: <span id="coffee-count">{{ count_cups }}</span> чашек</p>
+        <form action="/drink_coffee/" method="post">
+            <button type="submit" id="coffee-button">Я выпил кофе</button>
+        </form>
+    </div>
+</body>
+</html>
+
