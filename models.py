@@ -24,6 +24,7 @@ class Users(Base):
     id: Mapped [int] = mapped_column(primary_key=True, autoincrement=True)
     username: Mapped[str]
     password: Mapped[str]
+    JWT_token: Mapped[str]
 
 class CountCoffeeCups(Base):
     __tablename__ = "coffee_cups"
