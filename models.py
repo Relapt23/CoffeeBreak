@@ -3,7 +3,7 @@ from sqlalchemy.orm import sessionmaker, Session, mapped_column, Mapped, Declara
 from fastapi import HTTPException, Form
 from sqlalchemy import Table, Column, Integer, String, ForeignKey
 
-class User(BaseModel):
+class UserRegisterModel(BaseModel):
     username: str
     password: str
 
@@ -24,7 +24,7 @@ class Users(Base):
     id: Mapped [int] = mapped_column(primary_key=True, autoincrement=True)
     username: Mapped[str]
     password: Mapped[str]
-    JWT_token: Mapped[str]
+    jwt_token: Mapped[str]
 
 class CountCoffeeCups(Base):
     __tablename__ = "coffee_cups"

@@ -4,16 +4,104 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Кофейный счетчик</title>
-    <link rel="stylesheet" href="/static/style.css">
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        /* Фон страницы */
+        body {
+            margin: 0;
+            padding: 0;
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background: url('/static/images/background.PNG') center/cover no-repeat; /* Фон с кофейной текстурой */
+            font-family: 'Poppins', sans-serif;
+            color: white;
+        }
+
+        /* Центрированный контейнер */
+        .container {
+            text-align: center;
+            background: rgba(194, 175, 132, 0.864); /* Полупрозрачный фон для контраста */
+            padding: 50px;
+            border-radius: 20px;
+            box-shadow: 0px 10px 30px rgba(0, 0, 0, 0.6);
+            width: 90%;
+            max-width: 400px;
+        }
+
+        /* Заголовок */
+        h1 {
+            font-size: 2.5rem;
+            margin-bottom: 20px;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            color: #6a4f23;
+        }
+
+        /* Абзац с количеством чашек */
+        p {
+            font-size: 1.2rem;
+            margin-bottom: 40px;
+            color: #6a4f23;
+        }
+
+        #coffee-count {
+            font-weight: bold;
+            font-size: 2rem;
+            color: #5a3803;
+        }
+
+        /* Кнопка для увеличения количества кофе */
+        #coffee-button {
+            background: transparent;
+            border: none;
+            padding: 0;
+            cursor: pointer;
+        }
+
+        #coffee-button img {
+            content: url('/static/images/button.PNG');
+            width: 120px;
+            height: 120px;
+            transition: all 0.3s ease;
+        }
+
+        #coffee-button img:hover {
+            transform: scale(1.1);
+            box-shadow: 0px 12px 20px rgba(0, 0, 0, 0.6);
+        }
+
+        /* Медиа-запрос для мобильных */
+        @media (max-width: 768px) {
+            h1 {
+                font-size: 2rem;
+            }
+
+            p {
+                font-size: 1rem;
+            }
+
+            #coffee-button img {
+                width: 100px;
+                height: 100px;
+            }
+        }
+    </style>
 </head>
 <body>
     <div class="container">
         <h1>Кофейный счетчик</h1>
         <p>Вы выпили кофе: <span id="coffee-count">{{ count_cups }}</span> чашек</p>
         <form action="/drink_coffee/" method="get">
-            <button type="submit" id="coffee-button">Я выпил кофе</button>
+            <button type="submit" id="coffee-button">
+                <img src="/static/images/button.PNG" alt="Чашка кофе"></button>
         </form>
     </div>
+
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>
 
