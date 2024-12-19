@@ -3,7 +3,7 @@ from sqlalchemy.orm import sessionmaker, Session, mapped_column, Mapped, Declara
 from fastapi import HTTPException, Form
 from sqlalchemy import Table, Column, Integer, String, ForeignKey
 
-class User(BaseModel):
+class UserRegisterModel(BaseModel):
     username: str
     password: str
 
