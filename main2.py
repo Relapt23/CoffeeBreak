@@ -36,7 +36,7 @@ async def register(user: UserRegisterModel = Depends(UserRegisterModel.as_form))
         query = select(Users)
         res = session.execute(query.where(Users.username == user.username)).scalar_one_or_none()
         if not res:
-            session.execute(insert(Users), {"username":user.username, "password":hashed_password, "jwt_token": ''})
+            session.execute(insert(Users), {"username":user.username, "password":hashed_password})
         else:
             raise CustomException(detail="Пользователь с таким именем уже существует, попробуйте другое имя", status_code=404)        
         session.commit()
@@ -50,14 +50,13 @@ async def login(request: Request):
 @app.post("/login", response_class=HTMLResponse)
 async def login_form(user: UserRegisterModel = Depends(UserRegisterModel.as_form)):
     with sess() as session:
-        jwt_token = make_jwt_token({"sub": user.username})
+        jwt_token = make_jwt_token(user.username)
         res = session.execute(select(Users).where(Users.username == user.username)).scalar_one_or_none()        
         if not res:
             raise CustomException(detail="Неверное имя или пароль", status_code=404)        
         # Проверяем пароль
         if not pwd_context.verify(user.password, res.password):
             raise CustomException(detail="Неверное имя или пароль", status_code=404)
-        session.execute(update(Users).where(user.username == Users.username), {"jwt_token": jwt_token})
         session.commit()
         response = JSONResponse({"message": "Успешный вход"})
         response.set_cookie("jwt", jwt_token)
