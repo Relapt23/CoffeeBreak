@@ -1,7 +1,8 @@
 from pydantic import BaseModel
-from sqlalchemy.orm import sessionmaker, Session, mapped_column, Mapped, DeclarativeBase, relationship
+from sqlalchemy.orm import mapped_column, Mapped, DeclarativeBase
 from fastapi import HTTPException, Form
-from sqlalchemy import Table, Column, Integer, String, ForeignKey
+from sqlalchemy import JSON
+from typing import Optional
 
 class UserRegisterModel(BaseModel):
     username: str
@@ -24,11 +25,8 @@ class Users(Base):
     id: Mapped [int] = mapped_column(primary_key=True, autoincrement=True)
     username: Mapped[str]
     password: Mapped[str]
-
-class CountCoffeeCups(Base):
-    __tablename__ = "coffee_cups"
-    id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
-    user_id: Mapped[int] = mapped_column(ForeignKey('users.id'))
+    overview: Mapped[Optional[str]] = None
+    friends: Mapped[Optional[list]] = mapped_column(JSON)
     count_cups: Mapped[int]
 
 class CustomException(HTTPException):
