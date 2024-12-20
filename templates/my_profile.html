@@ -1,0 +1,17 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Artem</title>
+    <meta charset="utf-8" />>
+</head>
+<body>
+    <form action="/about_me/add_friends/" method="post">
+        <textarea type="text" name="friend_username"></textarea>
+        <button type="submit">Добавить</button>
+    </form>
+    {% for key, val in info.items() %}
+    <li>{{key}}: {{val}}
+    </li>
+    {% endfor %}
+</body>
+</html>
