@@ -68,8 +68,11 @@ async def login_form(user: UserRegisterModel = Depends(UserRegisterModel.as_form
 
 
 @app.get("/home", response_class=HTMLResponse)
-async def home(request: Request):
-    return templates.TemplateResponse("home.html", {"request": request})
+async def home(request: Request, jwt: Optional[str] = Cookie(None)):
+    user = get_user_from_jwt_token(jwt)
+    with sess() as session:
+        count_cups = session.execute(select(Users.count_cups).where(user == Users.username)).scalar_one()
+    return templates.TemplateResponse("home.html", {"request": request, "count_cups": count_cups})
 
 
 @app.get("/drink_coffee/", response_class=HTMLResponse)
@@ -78,30 +81,26 @@ async def count_cup(request: Request, jwt: Optional[str] = Cookie(None)):
     with sess() as session:
         session.execute(update(Users).where(user == Users.username).values(count_cups = Users.count_cups + 1))
         session.commit()
-        user_info = session.execute(select(Users).where(user == Users.username)).scalar_one_or_none()
-    return templates.TemplateResponse(name="home.html", context={"request":request, "count_cups": user_info.count_cups})
+    return RedirectResponse("/home")
 
 
 @app.get("/about_me" , response_class=HTMLResponse)
 async def my_profile( request: Request, jwt: Optional[str] = Cookie(None)):
     user = get_user_from_jwt_token(jwt)
-    info_about_me = {}
     with sess() as session:
         info = session.execute(select(Users).where(user == Users.username)).scalar_one_or_none()
         info_about_me = {"username": info.username, "overview": info.overview, "friends": info.friends, "count_cups": info.count_cups}
         session.commit()
     return templates.TemplateResponse(name = "my_profile.html", context={"request": request, "info": info_about_me})
 
-
 @app.post("/about_me/add_friends/", response_class=HTMLResponse)
-async def add_friend(request: Request, friend_username: str = Form(...), jwt: Optional[str] = Cookie(None)):
+async def add_friend(friend_username: str = Form(...), jwt: Optional[str] = Cookie(None)):
     user = get_user_from_jwt_token(jwt)
     with sess() as session:
         res = session.execute(select(Users).where(Users.username == friend_username)).scalar_one_or_none()
-        if res != None:
-            if friend_username not in res.friends and friend_username != user:
-                res.friends.append(friend_username)
-                session.execute(update(Users).where(Users.username == user).values(friends = res.friends))
-                session.commit()
+        if res != None and friend_username not in res.friends and friend_username != user:
+            res.friends.append(friend_username)
+            session.execute(update(Users).where(Users.username == user).values(friends = res.friends))
+            session.commit()
     return RedirectResponse(url="/about_me", status_code=status.HTTP_303_SEE_OTHER)
 
