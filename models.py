@@ -2,7 +2,7 @@ from pydantic import BaseModel
 from sqlalchemy.orm import mapped_column, Mapped, DeclarativeBase
 from fastapi import HTTPException, Form
 from sqlalchemy import JSON
-from typing import Optional
+from typing import Optional, List
 
 class UserRegisterModel(BaseModel):
     username: str
@@ -26,7 +26,7 @@ class Users(Base):
     username: Mapped[str]
     password: Mapped[str]
     overview: Mapped[Optional[str]] = None
-    friends: Mapped[Optional[list]] = mapped_column(JSON)
+    friends: Mapped[Optional[list]] = mapped_column(JSON, default=[])
     count_cups: Mapped[int]
 
 class CustomException(HTTPException):
