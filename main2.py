@@ -1,8 +1,8 @@
-from fastapi import FastAPI, Depends, Query, Cookie
-from fastapi.responses import HTMLResponse, JSONResponse
+from fastapi import FastAPI, Depends, Cookie, Form, status
+from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
 from fastapi.requests import Request
-from models import UserRegisterModel, Base, Users, CustomException, CountCoffeeCups
+from models import UserRegisterModel, Base, Users, CustomException
 from sqlalchemy import MetaData, create_engine, select, insert, update
 from sqlalchemy.orm import sessionmaker
 from security import *
@@ -20,29 +20,39 @@ def create_tables():
     Base.metadata.drop_all(engine)
     Base.metadata.create_all(engine)
     engine.echo = True
+    with sess() as session:
+        session.execute(insert(Users), {"username":"roma", "password":"$2b$12$.trlRGxiKQPMPml7Ao5o5u4HMWguv63Mfmfzn/9qp5TnrQ/81won2", "overview": None, "friends":[], "count_cups":0})
+        session.execute(insert(Users), {"username":"tema", "password":"$2b$12$.trlRGxiKQPMPml7Ao5o5u4HMWguv63Mfmfzn/9qp5TnrQ/81won2", "overview": None, "friends":[], "count_cups":0})
+        session.execute(insert(Users), {"username":"tema1", "password":"$2b$12$.trlRGxiKQPMPml7Ao5o5u4HMWguv63Mfmfzn/9qp5TnrQ/81won2", "overview": None, "friends":[], "count_cups":0})
+        session.execute(insert(Users), {"username":"tema2", "password":"$2b$12$.trlRGxiKQPMPml7Ao5o5u4HMWguv63Mfmfzn/9qp5TnrQ/81won2", "overview": None, "friends":[], "count_cups":0})
+        session.commit()
 
         
 create_tables()
 
 @app.get("/register", response_class=HTMLResponse)
 async def register_form(request: Request):
+
     return templates.TemplateResponse("register.html", {"request": request})
 
 
 @app.post("/register")
 async def register(user: UserRegisterModel = Depends(UserRegisterModel.as_form)):
     hashed_password = pwd_context.hash(user.password)
+
+
     with sess() as session:
         query = select(Users)
         res = session.execute(query.where(Users.username == user.username)).scalar_one_or_none()
         if not res:
-            session.execute(insert(Users), {"username":user.username, "password":hashed_password})
+            session.execute(insert(Users), {"username": user.username, "password": hashed_password, "overview": None, "friends": [], "count_cups": 0})
         else:
             raise CustomException(detail="Пользователь с таким именем уже существует, попробуйте другое имя", status_code=404)        
         session.commit()
 
 @app.get("/login", response_class=HTMLResponse)
 async def login(request: Request):
+
     return templates.TemplateResponse("login.html", {"request": request})
 
 
@@ -51,6 +61,8 @@ async def login(request: Request):
 async def login_form(user: UserRegisterModel = Depends(UserRegisterModel.as_form)):
     with sess() as session:
         jwt_token = make_jwt_token(user.username)
+
+
         res = session.execute(select(Users).where(Users.username == user.username)).scalar_one_or_none()        
         if not res:
             raise CustomException(detail="Неверное имя или пароль", status_code=404)        
@@ -60,24 +72,112 @@ async def login_form(user: UserRegisterModel = Depends(UserRegisterModel.as_form
         session.commit()
         response = JSONResponse({"message": "Успешный вход"})
         response.set_cookie("jwt", jwt_token)
+
         return response
 
 
 @app.get("/home", response_class=HTMLResponse)
-async def home(request: Request):
-    return templates.TemplateResponse("home.html", {"request": request})
+async def home(request: Request, jwt: Optional[str] = Cookie(None)):
+    user = get_user_from_jwt_token(jwt)
+
+
+    with sess() as session:
+        count_cups = session.execute(select(Users.count_cups).where(user == Users.username)).scalar_one()
+
+    return templates.TemplateResponse("home.html", {"request": request, "count_cups": count_cups})
 
 
 @app.get("/drink_coffee/", response_class=HTMLResponse)
 async def count_cup(request: Request, jwt: Optional[str] = Cookie(None)):
     user = get_user_from_jwt_token(jwt)
+
+
     with sess() as session:
-        user_info = session.execute(select(Users).where(user == Users.username)).scalar_one_or_none()
-        res = session.execute(select(CountCoffeeCups).where(user_info.id == CountCoffeeCups.user_id)).scalar_one_or_none()
-        if not res:
-            session.execute(insert(CountCoffeeCups), {"user_id":user_info.id, "count_cups": 0})
-            session.commit()
-        session.execute(update(CountCoffeeCups).where(user_info.id == CountCoffeeCups.user_id).values(count_cups = CountCoffeeCups.count_cups + 1))
+        session.execute(update(Users).where(user == Users.username).values(count_cups = Users.count_cups + 1))
         session.commit()
-        update_cups = session.execute(select(CountCoffeeCups.count_cups).where(user_info.id == CountCoffeeCups.user_id)).scalar_one()
-    return templates.TemplateResponse(name="home.html", context={"request":request, "count_cups": update_cups})
+
+    return RedirectResponse("/home")
+
+
+@app.get("/about_me" , response_class=HTMLResponse)
+async def my_profile( request: Request, jwt: Optional[str] = Cookie(None)):
+    user = get_user_from_jwt_token(jwt)
+
+
+    with sess() as session:
+        info = session.execute(select(Users).where(user == Users.username)).scalar_one_or_none()
+        info_about_me = {"username": info.username, "overview": info.overview, "friends": info.friends, "count_cups": info.count_cups}
+        session.commit()
+
+    return templates.TemplateResponse(name = "my_profile.html", context={"request": request, "info": info_about_me})
+
+
+@app.post("/about_me/add_friends/", response_class=HTMLResponse)
+async def add_friend(friend_username: str = Form(...), jwt: Optional[str] = Cookie(None)):
+    user = get_user_from_jwt_token(jwt)
+
+
+    with sess() as session:
+        # Найти текущего пользователя
+        current_user = session.execute(select(Users).where(Users.username == user)).scalar_one_or_none()
+        if not current_user:
+            return RedirectResponse(url="/about_me", status_code=status.HTTP_303_SEE_OTHER)
+
+        # Найти друга
+        friend = session.execute(select(Users).where(Users.username == friend_username)).scalar_one_or_none()
+        if not friend or friend_username == user:
+            return RedirectResponse(url="/about_me", status_code=status.HTTP_303_SEE_OTHER)
+
+        # Проверить, есть ли друг в списке
+        current_friends = current_user.friends or []
+
+        if friend_username not in current_friends:
+            current_friends.append(friend_username)
+            # Обновить список друзей
+            session.execute(update(Users).where(Users.username == user).values(friends=current_friends))
+            session.commit()
+
+    return RedirectResponse(url="/about_me", status_code=status.HTTP_303_SEE_OTHER)
+
+@app.get("/edit_profile/form", response_class=HTMLResponse)
+async def edit_profile(request: Request, jwt: Optional[str] = Cookie(None)):
+    user = get_user_from_jwt_token(jwt)
+
+
+    with sess() as session:
+        info = session.execute(select(Users).where(user == Users.username)).scalar_one_or_none()
+        info_about_me = {"username": info.username, "overview": info.overview, "friends": info.friends, "count_cups": info.count_cups}
+        session.commit()
+
+    return templates.TemplateResponse(name = "edit_profile.html", context={"request": request, "info": info_about_me})
+
+
+
+@app.post("/edit_profile", response_class=HTMLResponse)
+async def add_profile(edit_overview: str = Form(...), jwt: Optional[str] = Cookie(None)):
+    user = get_user_from_jwt_token(jwt)
+
+
+    with sess() as session:
+        session.execute(
+            update(Users)
+            .where(Users.username == user)
+            .values(overview=edit_overview)
+        )
+        session.commit()
+
+    return RedirectResponse(url="/about_me", status_code=status.HTTP_303_SEE_OTHER)
+
+
+@app.post("/about_me/delete_friends/", response_class=HTMLResponse)
+async def delete_friends(friend_username: str = Form(...), jwt: Optional[str] = Cookie(None)):
+    user = get_user_from_jwt_token(jwt)
+
+    with sess() as session:
+        friend_list = session.execute(select(Users.friends).where(Users.username == user)).scalar_one_or_none()
+
+        if friend_list and friend_username in friend_list:
+            friend_list.remove(friend_username)
+            session.execute(update(Users).where(Users.username == user).values(friends=friend_list))
+            session.commit()
+    return RedirectResponse(url="/about_me", status_code=status.HTTP_303_SEE_OTHER)
